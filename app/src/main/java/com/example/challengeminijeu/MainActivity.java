@@ -26,19 +26,6 @@ public class MainActivity extends Activity {
         if (FirebaseApp.getApps(this).isEmpty()) {
             FirebaseApp.initializeApp(this);
         }
-        RankingRepository rankingRepository = new RankingRepository();
-        Ranking ranking = Ranking.builder()
-                .id(String.valueOf(UUID.randomUUID()))
-                .userName("Léo")
-                .score(5)
-                .nbHand(1)
-                .nbFingers(3)
-                .build();
-        rankingRepository.addRanking(ranking, success -> {
-            if (!success) {
-                Log.d("MainActivity", "Ajout Ranking");
-            }
-        });
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
