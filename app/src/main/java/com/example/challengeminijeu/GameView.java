@@ -3,6 +3,7 @@ package com.example.challengeminijeu;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -588,26 +589,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (!name.isEmpty()) {
                             long duration = System.currentTimeMillis() - startTimeMs;
 
-                            RankingRepository repo = new RankingRepository();
-                            Ranking ranking = Ranking.builder()
-                                    .id(UUID.randomUUID().toString())
-                                    .userName(name)
-                                    .score(100)
-                                    .nbHand(hands)
-                                    .nbFingers(fingers)
-                                    .build();
+                            saveRankingLocally(name, 100, hands, fingers);
 
-                            repo.addRanking(ranking, success -> {
-                                if (success) {
-                                    Intent intent = new Intent(context, EndGameActivity.class);
-                                    intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
-                                    intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
+                            Intent intent = new Intent(context, EndGameActivity.class);
+                            intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
+                            intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
 
-                                    android.app.Activity activity = (android.app.Activity) context;
-                                    activity.startActivity(intent);
-                                    activity.finish();
-                                }
-                            });
+                            android.app.Activity activity = (android.app.Activity) context;
+                            activity.startActivity(intent);
+                            activity.finish();
                         } else {
                             input.setError("Nom requis");
                         }
@@ -615,5 +605,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     .show();
         });
     }
+
+    public void saveRankingLocally(String name, int score, int hands, int fingers) {
+        SharedPreferences prefs = context.getSharedPreferences("rankings", Context.MODE_PRIVATE);
+        String existing = prefs.getString("ranking_list", "");
+
+        // Nouveau score sous forme de ligne
+        String newEntry = name + "|" + score + "|" + hands + "|" + fingers;
+
+        // Ajout à la liste existante
+        String updatedList = existing.isEmpty() ? newEntry : existing + "\n" + newEntry;
+
+        prefs.edit().putString("ranking_list", updatedList).apply();
+    }
+
 
 }

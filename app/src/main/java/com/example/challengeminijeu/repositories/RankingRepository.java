@@ -20,7 +20,7 @@ public class RankingRepository {
     }
 
     public void addRanking(Ranking ranking, Consumer<Boolean> callback) {
-        rankingCollection.document(ranking.getId()).set(ranking, SetOptions.merge())
+        rankingCollection.add(ranking)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "Ranking added : " + ranking.getId());
                     callback.accept(true);

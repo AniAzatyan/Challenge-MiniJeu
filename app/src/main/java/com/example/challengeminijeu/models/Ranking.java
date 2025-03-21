@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 
 @Data
-@Builder
 public class Ranking {
 
     @DocumentId
@@ -16,4 +15,10 @@ public class Ranking {
     private int nbHand;
     private int nbFingers;
 
+    public Ranking(String userName, int score, int nbHand, int nbFingers) {
+        this.userName = userName;
+        this.score = score;
+        this.nbHand = nbHand;
+        this.nbFingers = nbFingers;
+    }
 }
