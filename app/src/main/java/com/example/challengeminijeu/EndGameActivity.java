@@ -3,15 +3,10 @@ package com.example.challengeminijeu;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-
-import com.example.challengeminijeu.models.Ranking;
-import com.example.challengeminijeu.repositories.RankingRepository;
 
 public class EndGameActivity extends Activity {
 
@@ -32,15 +27,20 @@ public class EndGameActivity extends Activity {
         String winnerName = intent.getStringExtra(EXTRA_WINNER_NAME);
         long durationMs = intent.getLongExtra(EXTRA_DURATION_MS, 0);
 
-
         long minutes = (durationMs / 1000) / 60;
         long seconds = (durationMs / 1000) % 60;
 
         winnerText.setText("Gagnant : " + winnerName);
         durationText.setText("Durée de la partie : " + minutes + "m " + seconds + "s");
 
-        // TODO: Remplacer ceci par la récupération réelle du classement avec les rounds de défaite
-        rankingText.setText("Classement (simulé) :\n1. " + winnerName + " (Vainqueur)\n2. Joueur 2 - éliminé au round X\n3. Joueur 3 - éliminé au round X");
+        // Récupérer le classement local (depuis SharedPreferences, par exemple à implémenter)
+        // Ici, on affiche un classement fictif
+        String fakeRanking =
+                "1. " + winnerName + " (Vainqueur)\n" +
+                        "2. Joueur 2 - éliminé au round 4\n" +
+                        "3. Joueur 3 - éliminé au round 2";
+
+        rankingText.setText(fakeRanking);
 
         returnButton.setOnClickListener(v -> {
             Intent backToMain = new Intent(EndGameActivity.this, MainActivity.class);

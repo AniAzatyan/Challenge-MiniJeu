@@ -3,16 +3,16 @@ package com.example.challengeminijeu;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
@@ -26,15 +26,11 @@ import android.os.Vibrator;
 import android.widget.EditText;
 
 import com.example.challengeminijeu.models.Button;
-import com.example.challengeminijeu.models.Ranking;
-import com.example.challengeminijeu.repositories.RankingRepository;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
 import java.util.Random;
-import java.util.UUID;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
@@ -77,6 +73,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean wheelLock = false;
     private int color;
 
+    private MediaPlayer mediaPlayer;
+
     private final int RED = ContextCompat.getColor(getContext(), R.color.red);
     private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
     private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
@@ -91,6 +89,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
+
+        mediaPlayer = MediaPlayer.create(context, R.raw.wheel);
+        mediaPlayer.setLooping(true);
 
         initializeButtons(context);
         initializeSoundPool(context);
@@ -248,8 +249,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void changeTurn(String colorName) {
-        //showWinnerPopupAndEndGame(startedTime);
-
         changeHandAndFinger(colorName);
         currentPlayer = (currentPlayer + 1) % hands;
 
@@ -483,19 +482,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             audioRecord.release();
             audioRecord = null;
         }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     public void update() {
         if(!wheelLock) {
 
             if (isSpinning) {
+                if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
 
+            float volume = Math.min(spinSpeed / 10f, 1f);
+            mediaPlayer.setVolume(volume, volume);
             if (spinSpeed < 1f) {
                 isSpinning = false;
                 spinSpeed = 0;
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mediaPlayer.seekTo(0);
+                }
 
                 rouletteRotation = rouletteRotation % 360;
 
@@ -588,26 +601,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (!name.isEmpty()) {
                             long duration = System.currentTimeMillis() - startTimeMs;
 
-                            RankingRepository repo = new RankingRepository();
-                            Ranking ranking = Ranking.builder()
-                                    .id(UUID.randomUUID().toString())
-                                    .userName(name)
-                                    .score(100)
-                                    .nbHand(hands)
-                                    .nbFingers(fingers)
-                                    .build();
+                            saveRankingLocally(name, 100, hands, fingers);
 
-                            repo.addRanking(ranking, success -> {
-                                if (success) {
-                                    Intent intent = new Intent(context, EndGameActivity.class);
-                                    intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
-                                    intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
+                            Intent intent = new Intent(context, EndGameActivity.class);
+                            intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
+                            intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
 
-                                    android.app.Activity activity = (android.app.Activity) context;
-                                    activity.startActivity(intent);
-                                    activity.finish();
-                                }
-                            });
+                            android.app.Activity activity = (android.app.Activity) context;
+                            activity.startActivity(intent);
+                            activity.finish();
                         } else {
                             input.setError("Nom requis");
                         }
@@ -615,5 +617,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     .show();
         });
     }
+
+    public void saveRankingLocally(String name, int score, int hands, int fingers) {
+        SharedPreferences prefs = context.getSharedPreferences("rankings", Context.MODE_PRIVATE);
+        String existing = prefs.getString("ranking_list", "");
+
+        // Nouveau score sous forme de ligne
+        String newEntry = name + "|" + score + "|" + hands + "|" + fingers;
+
+        // Ajout à la liste existante
+        String updatedList = existing.isEmpty() ? newEntry : existing + "\n" + newEntry;
+
+        prefs.edit().putString("ranking_list", updatedList).apply();
+    }
+
 
 }
