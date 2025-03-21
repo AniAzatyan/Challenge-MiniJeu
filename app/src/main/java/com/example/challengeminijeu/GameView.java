@@ -47,10 +47,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isSpinning = false;
     private float spinSpeed = 0;
 
-    private final int RED;
-    private final int GREEN;
-    private final int BLUE;
-    private final int YELLOW;
+
     private SoundPool soundPool;
     private int soundReleasedId;
     private AudioRecord audioRecord;
@@ -68,7 +65,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int currentPlayer = 0;
     private int numPlayers = 5;
 
-    public GameView(Context context) {
+    private final int RED = ContextCompat.getColor(getContext(), R.color.red);
+    private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
+    private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
+    private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
+    private int fingers;
+    private int hands;
+    public GameView(Context context,  int fingers, int hands) {
         super(context);
         this.numPlayers = Math.max(1, Math.min(numPlayers, 5));
         getHolder().addCallback(this);
@@ -80,11 +83,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         initializeSoundPool(context);
         initializeVibrator(context);
 
-        RED = ContextCompat.getColor(getContext(), R.color.red);
-        GREEN = ContextCompat.getColor(getContext(), R.color.green);
-        BLUE = ContextCompat.getColor(getContext(), R.color.blue);
-        YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
-
         colors = new int[][]{
                 {RED, RED, RED, RED},
                 {GREEN, GREEN, GREEN, GREEN},
@@ -95,6 +93,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         loadHandImages();
         changeHandAndFinger();
+
+        this.fingers = fingers;
+        this.hands = hands;
     }
 
     private void loadHandImages() {
