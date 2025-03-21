@@ -9,11 +9,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
@@ -27,15 +26,11 @@ import android.os.Vibrator;
 import android.widget.EditText;
 
 import com.example.challengeminijeu.models.Button;
-import com.example.challengeminijeu.models.Ranking;
-import com.example.challengeminijeu.repositories.RankingRepository;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
 import java.util.Random;
-import java.util.UUID;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
@@ -78,6 +73,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean wheelLock = false;
     private int color;
 
+    private MediaPlayer mediaPlayer;
+
     private final int RED = ContextCompat.getColor(getContext(), R.color.red);
     private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
     private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
@@ -92,6 +89,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
+
+        mediaPlayer = MediaPlayer.create(context, R.raw.wheel);
+        mediaPlayer.setLooping(true);
 
         initializeButtons(context);
         initializeSoundPool(context);
@@ -249,8 +249,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void changeTurn(String colorName) {
-        //showWinnerPopupAndEndGame(startedTime);
-
         changeHandAndFinger(colorName);
         currentPlayer = (currentPlayer + 1) % hands;
 
@@ -484,19 +482,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             audioRecord.release();
             audioRecord = null;
         }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     public void update() {
         if(!wheelLock) {
 
             if (isSpinning) {
+                if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
 
+            float volume = Math.min(spinSpeed / 10f, 1f);
+            mediaPlayer.setVolume(volume, volume);
             if (spinSpeed < 1f) {
                 isSpinning = false;
                 spinSpeed = 0;
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mediaPlayer.seekTo(0);
+                }
 
                 rouletteRotation = rouletteRotation % 360;
 
