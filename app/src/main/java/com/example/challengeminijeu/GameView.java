@@ -69,17 +69,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap currentRightHand;
 
     private int currentPlayer = 0;
+    private  int rightIndex = 0;
     private int hands;
     private int fingers;
     private final Context context;
     private final long startedTime;
+    private boolean wheelLock = false;
+    private int color;
 
     private final int RED = ContextCompat.getColor(getContext(), R.color.red);
     private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
     private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
     private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
 
-    public GameView(Context context, int hands, int fingers) {
+    public GameView(Context context, int fingers, int hands) {
         super(context);
         this.context = context;
         this.startedTime = System.currentTimeMillis();
@@ -245,10 +248,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void changeTurn(String colorName) {
-        showWinnerPopupAndEndGame(startedTime);
+        //showWinnerPopupAndEndGame(startedTime);
 
-        currentPlayer = (currentPlayer + 1) % hands;
         changeHandAndFinger(colorName);
+        currentPlayer = (currentPlayer + 1) % hands;
+
+        wheelLock = true;
     }
 
     public void changeHandAndFinger(String colorName) {
@@ -296,58 +301,116 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
+
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
                     if (!buttons[col][row].isPressed()) {
-                        buttons[col][row].press();
-                        currentFingerButton[event.getPointerId(pointerIndex)] = col * NUM_CIRCLES + row;
-                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " pressed Button [" + col + "][" + row + "]");
+                        buttons[col][row].press();}
+
+                    if( color  != buttons[col][row].getColor()) {
+                        Log.d("GameView", "Player " + currentPlayer + "a perdu");
+                        soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE));
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
                     }
+                    else
+                    {
+                        buttons[col][row].setMain(currentPlayer);
+                        buttons[col][row].setFinger(rightIndex );
+                        wheelLock = false;
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()  + "   -Finger " + buttons[col][row].getFinger() + " pressed Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_UP:
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
-                    if (buttons[col][row].isPressed()) {
-                        buttons[col][row].release();
+                    if (buttons[col][row].isPressed()) { buttons[col][row].release();}
+                    var hand= buttons[col][row].getMain();
+                    var finger= buttons[col][row].getFinger();
+                    if((buttons[col][row].getMain() != currentPlayer) || buttons[col][row].getFinger() != (rightIndex ))
+                    {
+
                         Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " released Button [" + col + "][" + row + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
+
                     }
+
+                    else
+                    {
+                        buttons[col][row].setMain(-1);
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()  + "   -Finger " + buttons[col][row].getFinger() + " released Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
+
+
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
+
                     if (!buttons[col][row].isPressed()) {
-                        buttons[col][row].press();
-                        currentFingerButton[event.getPointerId(pointerIndex)] = col * NUM_CIRCLES + row;
-                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " pressed Button [" + col + "][" + row + "]");
+                        buttons[col][row].press();}
+
+                    if(buttons[col][row].getColor() != color )
+                    {
+                        Log.d("GameView", "Player " + (currentPlayer )+ "a perdu");
+                        soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
                     }
+                    else
+                    {
+                        buttons[col][row].setMain(currentPlayer);
+                        buttons[col][row].setFinger(rightIndex );
+                        wheelLock = false;
+
+                        Log.d("GameView", "Main : " + (buttons[col][row].getMain() + "   -Finger " + buttons[col][row].getFinger() + " pressed Button [" + col + "][" + row + "]"));
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_POINTER_UP:
-                int pointerId = event.getPointerId(pointerIndex);
-                int buttonIndex = currentFingerButton[pointerId];
-                if (buttonIndex != 0) {
-                    int buttonCol = buttonIndex / NUM_CIRCLES;
-                    int buttonRow = buttonIndex % NUM_CIRCLES;
-                    if (buttons[buttonCol][buttonRow].isPressed()) {
-                        buttons[buttonCol][buttonRow].release();
-                        Log.d("GameView", "Finger " + pointerId + " released Button [" + buttonCol + "][" + buttonRow + "]");
+                if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
+                    if (buttons[col][row].isPressed()) { buttons[col][row].release();}
+
+
+
+                    if((buttons[col][row].getMain() != currentPlayer) || buttons[col][row].getFinger() != rightIndex )
+                    {
+
+                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " released Button [" + col + "][" + row + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
+
                     }
+
+                    else
+                    {
+                        buttons[col][row].setMain(-1);
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()+ "   -Finger " + buttons[col][row].getFinger() + " released Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
@@ -366,6 +429,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         return true;
     }
+
 
 
     private void startMicListening() {
@@ -422,7 +486,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void update() {
-        if (isSpinning) {
+        if(!wheelLock) {
+
+            if (isSpinning) {
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
@@ -436,7 +502,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 float arrowAngle = (270 - rouletteRotation + 360) % 360;
                 int sector = (int) (arrowAngle / (360f / rouletteColors.length));
 
-                int color = rouletteColors[sector];
+                 color = rouletteColors[sector];
                 String colorName = "Unknown";
                 if (color == RED) colorName = "RED";
                 else if (color == BLUE) colorName = "BLUE";
@@ -447,6 +513,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                 Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
             }
+        }
+        }
+        else
+        {
+            isSpinning = false;
         }
 
     }
