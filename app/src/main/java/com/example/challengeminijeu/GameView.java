@@ -246,9 +246,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     double amplitude = Math.sqrt(sum / read);
 
-                    if (amplitude > 4000 && !isSpinning) {
-                        Log.d("GameView", "Souffle détecté !");
-                        startRouletteSpin();
+                    if (amplitude > 3000) {
+                        float addedSpeed = (float) (amplitude / 1500);
+                        spinSpeed += addedSpeed;
+
+                        if (!isSpinning) {
+                            isSpinning = true;
+                        }
                     }
                 }
             }
@@ -264,23 +268,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    private void startRouletteSpin() {
-        isSpinning = true;
-        spinSpeed = 35 + new Random().nextInt(10);
-    }
-
     public void update() {
         if (isSpinning) {
             rouletteRotation += spinSpeed;
 
-            if (spinSpeed > 5f) {
-                spinSpeed *= 0.97f;
-            } else {
-                spinSpeed *= 0.985f;
-            }
+            spinSpeed *= 0.985f;
 
             if (spinSpeed < 1f) {
                 isSpinning = false;
+                spinSpeed = 0;
+
                 rouletteRotation = rouletteRotation % 360;
 
                 float arrowAngle = (270 - rouletteRotation + 360) % 360;
@@ -296,6 +293,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
             }
         }
+
     }
 
 }
