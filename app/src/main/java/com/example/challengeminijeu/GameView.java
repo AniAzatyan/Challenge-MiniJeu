@@ -240,7 +240,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " released Button [" + col + "][" + row + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(3000, VibrationEffect.DEFAULT_AMPLITUDE));
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
                     }
                 }
@@ -270,7 +270,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         Log.d("GameView", "Finger " + pointerId + " released Button [" + buttonCol + "][" + buttonRow + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(3000, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
                         }
                     }
                 }
@@ -374,7 +374,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     }
     private void initializeVibrator(Context context) {
-        vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE); 
+        vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
     }
     private void initializeButtons(Context context) {
         buttons = new Button[NUM_COLUMNS][NUM_CIRCLES];
