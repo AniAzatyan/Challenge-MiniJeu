@@ -1,8 +1,10 @@
 package com.example.challengeminijeu;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,6 +12,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
@@ -20,14 +23,14 @@ import android.media.AudioAttributes;
 import android.media.SoundPool;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.widget.EditText;
+
 import com.example.challengeminijeu.models.Button;
 
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
 import java.util.Random;
-import java.util.Random;
-
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
@@ -47,7 +50,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isSpinning = false;
     private float spinSpeed = 0;
 
-
     private SoundPool soundPool;
     private int soundReleasedId;
     private AudioRecord audioRecord;
@@ -63,21 +65,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap currentRightHand;
 
     private int currentPlayer = 0;
-    private int numPlayers = 5;
+    private  int rightIndex = 0;
+    private int hands;
+    private int fingers;
+    private final Context context;
+    private final long startedTime;
+    private boolean wheelLock = false;
+    private int color;
+
+    private MediaPlayer mediaPlayer;
 
     private final int RED = ContextCompat.getColor(getContext(), R.color.red);
     private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
     private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
     private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
-    private int fingers;
-    private int hands;
-    public GameView(Context context,  int fingers, int hands) {
+
+    public GameView(Context context, int fingers, int hands) {
         super(context);
-        this.numPlayers = Math.max(1, Math.min(numPlayers, 5));
+        this.context = context;
+        this.startedTime = System.currentTimeMillis();
+        this.hands = Math.max(1, Math.min(hands, 5));
+        this.fingers = fingers;
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
 
+        mediaPlayer = MediaPlayer.create(context, R.raw.wheel);
+        mediaPlayer.setLooping(true);
 
         initializeButtons(context);
         initializeSoundPool(context);
@@ -92,36 +106,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
 
         loadHandImages();
-        changeHandAndFinger();
-
-        this.fingers = fingers;
-        this.hands = hands;
     }
 
     private void loadHandImages() {
-        int[] leftHandIds = {
-                R.drawable.right_hand_1,
-                R.drawable.right_hand_2,
-                R.drawable.right_hand_3,
-                R.drawable.right_hand_4,
-                R.drawable.right_hand_5
-        };
+        leftHandImages = new Bitmap[hands*4];
+        rightHandImages = new Bitmap[fingers];
 
-        int[] rightHandIds = {
-                R.drawable.right_hand_index,
-                R.drawable.right_hand_majeur,
-                R.drawable.right_hand_pouce
-        };
-
-        leftHandImages = new Bitmap[leftHandIds.length];
-        rightHandImages = new Bitmap[rightHandIds.length];
-
-        for (int i = 0; i < leftHandIds.length; i++) {
-            leftHandImages[i] = getBitmapFromVector(leftHandIds[i]);
-        }
-
-        for (int i = 0; i < rightHandIds.length; i++) {
-            rightHandImages[i] = getBitmapFromVector(rightHandIds[i]);
+        for (int i = 0; i < fingers; i++) {
+            String name = "right_hand_finger" + (i + 1);
+            int resId = getResources().getIdentifier(name, "drawable", context.getPackageName());
+            rightHandImages[i] = getBitmapFromVector(resId);
         }
     }
 
@@ -254,30 +248,29 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawPath(createTrianglePath(points), trianglePaint);
     }
 
-    public void changeTurn() {
-        if (leftHandImages == null || leftHandImages.length == 0 || rightHandImages == null || rightHandImages.length == 0) {
-            Log.e("GameView", "Les images ne sont pas chargées !");
-            return;
-        }
+    public void changeTurn(String colorName) {
+        changeHandAndFinger(colorName);
+        currentPlayer = (currentPlayer + 1) % hands;
 
-        currentPlayer = (currentPlayer + 1) % numPlayers;
-        currentLeftHand = leftHandImages[currentPlayer];
-
-        changeHandAndFinger();
-
-        Log.d("GameView", "Tour du joueur: " + currentPlayer);
+        wheelLock = true;
     }
 
-    public void changeHandAndFinger() {
-        if (leftHandImages != null && leftHandImages.length > 0) {
-            currentLeftHand = leftHandImages[currentPlayer];
-        }
+    public void changeHandAndFinger(String colorName) {
         if (rightHandImages != null && rightHandImages.length > 0) {
-            int rightIndex = new Random().nextInt(rightHandImages.length);
+            int rightIndex = new Random().nextInt(fingers);
             currentRightHand = rightHandImages[rightIndex];
         }
-    }
 
+        String coloredDrawableName = "right_hand_" + (currentPlayer + 1) + "_" + colorName.toLowerCase();
+        int resId = getResources().getIdentifier(coloredDrawableName, "drawable", context.getPackageName());
+        Bitmap coloredHand = getBitmapFromVector(resId);
+
+        if (coloredHand != null) {
+            currentLeftHand = coloredHand;
+        } else {
+            currentLeftHand = null;
+        }
+    }
 
     private Paint createPaint(Paint.Style style, boolean antiAlias, float strokeWidth) {
         Paint paint = new Paint();
@@ -307,58 +300,116 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
+
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
                     if (!buttons[col][row].isPressed()) {
-                        buttons[col][row].press();
-                        currentFingerButton[event.getPointerId(pointerIndex)] = col * NUM_CIRCLES + row;
-                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " pressed Button [" + col + "][" + row + "]");
+                        buttons[col][row].press();}
+
+                    if( color  != buttons[col][row].getColor()) {
+                        Log.d("GameView", "Player " + currentPlayer + "a perdu");
+                        soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE));
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
                     }
+                    else
+                    {
+                        buttons[col][row].setMain(currentPlayer);
+                        buttons[col][row].setFinger(rightIndex );
+                        wheelLock = false;
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()  + "   -Finger " + buttons[col][row].getFinger() + " pressed Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_UP:
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
-                    if (buttons[col][row].isPressed()) {
-                        buttons[col][row].release();
+                    if (buttons[col][row].isPressed()) { buttons[col][row].release();}
+                    var hand= buttons[col][row].getMain();
+                    var finger= buttons[col][row].getFinger();
+                    if((buttons[col][row].getMain() != currentPlayer) || buttons[col][row].getFinger() != (rightIndex ))
+                    {
+
                         Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " released Button [" + col + "][" + row + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
+
                     }
+
+                    else
+                    {
+                        buttons[col][row].setMain(-1);
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()  + "   -Finger " + buttons[col][row].getFinger() + " released Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_POINTER_DOWN:
+
+
                 if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
+
                     if (!buttons[col][row].isPressed()) {
-                        buttons[col][row].press();
-                        currentFingerButton[event.getPointerId(pointerIndex)] = col * NUM_CIRCLES + row;
-                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " pressed Button [" + col + "][" + row + "]");
+                        buttons[col][row].press();}
+
+                    if(buttons[col][row].getColor() != color )
+                    {
+                        Log.d("GameView", "Player " + (currentPlayer )+ "a perdu");
+                        soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
                     }
+                    else
+                    {
+                        buttons[col][row].setMain(currentPlayer);
+                        buttons[col][row].setFinger(rightIndex );
+                        wheelLock = false;
+
+                        Log.d("GameView", "Main : " + (buttons[col][row].getMain() + "   -Finger " + buttons[col][row].getFinger() + " pressed Button [" + col + "][" + row + "]"));
+
+                    }
+
                 }
                 break;
 
             case MotionEvent.ACTION_POINTER_UP:
-                int pointerId = event.getPointerId(pointerIndex);
-                int buttonIndex = currentFingerButton[pointerId];
-                if (buttonIndex != 0) {
-                    int buttonCol = buttonIndex / NUM_CIRCLES;
-                    int buttonRow = buttonIndex % NUM_CIRCLES;
-                    if (buttons[buttonCol][buttonRow].isPressed()) {
-                        buttons[buttonCol][buttonRow].release();
-                        Log.d("GameView", "Finger " + pointerId + " released Button [" + buttonCol + "][" + buttonRow + "]");
+                if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
+                    if (buttons[col][row].isPressed()) { buttons[col][row].release();}
+
+
+
+                    if((buttons[col][row].getMain() != currentPlayer) || buttons[col][row].getFinger() != rightIndex )
+                    {
+
+                        Log.d("GameView", "Finger " + event.getPointerId(pointerIndex) + " released Button [" + col + "][" + row + "]");
                         soundPool.play(soundReleasedId, 1, 1, 0, 0, 1);
                         if (vibrator != null) {
-                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE)); // Vibrate for 100 ms
+                            vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
+                        showWinnerPopupAndEndGame(startedTime);
+
+
                     }
+
+                    else
+                    {
+                        buttons[col][row].setMain(-1);
+                        Log.d("GameView", "Main : " + buttons[col][row].getMain()+ "   -Finger " + buttons[col][row].getFinger() + " released Button [" + col + "][" + row + "]");
+
+                    }
+
                 }
                 break;
 
@@ -377,6 +428,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         return true;
     }
+
 
 
     private void startMicListening() {
@@ -430,34 +482,55 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             audioRecord.release();
             audioRecord = null;
         }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     public void update() {
-        if (isSpinning) {
+        if(!wheelLock) {
+
+            if (isSpinning) {
+                if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                }
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
 
+            float volume = Math.min(spinSpeed / 10f, 1f);
+            mediaPlayer.setVolume(volume, volume);
             if (spinSpeed < 1f) {
                 isSpinning = false;
                 spinSpeed = 0;
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mediaPlayer.seekTo(0);
+                }
 
                 rouletteRotation = rouletteRotation % 360;
 
                 float arrowAngle = (270 - rouletteRotation + 360) % 360;
                 int sector = (int) (arrowAngle / (360f / rouletteColors.length));
 
-                int color = rouletteColors[sector];
+                 color = rouletteColors[sector];
                 String colorName = "Unknown";
                 if (color == RED) colorName = "RED";
                 else if (color == BLUE) colorName = "BLUE";
                 else if (color == GREEN) colorName = "GREEN";
                 else if (color == YELLOW) colorName = "YELLOW";
 
-                changeTurn();
+                changeTurn(colorName);
 
                 Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
             }
+        }
+        }
+        else
+        {
+            isSpinning = false;
         }
 
     }
@@ -512,5 +585,51 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         return bitmap;
     }
+
+    private void showWinnerPopupAndEndGame(long startTimeMs) {
+        ((android.app.Activity) context).runOnUiThread(() -> {
+            EditText input = new EditText(context);
+            input.setHint("Nom du gagnant");
+
+            new AlertDialog.Builder(context)
+                    .setTitle("Fin de la partie")
+                    .setMessage("Entrez le nom du gagnant :")
+                    .setView(input)
+                    .setCancelable(false)
+                    .setPositiveButton("Valider", (dialog, which) -> {
+                        String name = input.getText().toString().trim();
+                        if (!name.isEmpty()) {
+                            long duration = System.currentTimeMillis() - startTimeMs;
+
+                            saveRankingLocally(name, 100, hands, fingers);
+
+                            Intent intent = new Intent(context, EndGameActivity.class);
+                            intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
+                            intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
+
+                            android.app.Activity activity = (android.app.Activity) context;
+                            activity.startActivity(intent);
+                            activity.finish();
+                        } else {
+                            input.setError("Nom requis");
+                        }
+                    })
+                    .show();
+        });
+    }
+
+    public void saveRankingLocally(String name, int score, int hands, int fingers) {
+        SharedPreferences prefs = context.getSharedPreferences("rankings", Context.MODE_PRIVATE);
+        String existing = prefs.getString("ranking_list", "");
+
+        // Nouveau score sous forme de ligne
+        String newEntry = name + "|" + score + "|" + hands + "|" + fingers;
+
+        // Ajout à la liste existante
+        String updatedList = existing.isEmpty() ? newEntry : existing + "\n" + newEntry;
+
+        prefs.edit().putString("ranking_list", updatedList).apply();
+    }
+
 
 }

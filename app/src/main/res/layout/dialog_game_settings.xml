@@ -47,7 +47,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center" />
 
-    <!-- Boutons personnalisés -->
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"

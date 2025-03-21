@@ -7,7 +7,7 @@
     <ImageView
         android:id="@+id/titleImage"
         android:layout_width="match_parent"
-        android:layout_height="700dp"
+        android:layout_height="500dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:scaleType="centerCrop"
@@ -28,7 +28,7 @@
         android:background="@drawable/button_red_glow"
         android:layout_below="@id/titleImage"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="32dp" />
+        android:layout_marginTop="16dp" />
 
     <Button
         android:id="@+id/scoreButton"
