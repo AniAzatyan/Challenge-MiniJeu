@@ -58,6 +58,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final int SAMPLE_RATE = 8000;
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
     private int[] currentFingerButton = new int[15];
+    private int[][] colors;
 
     private Bitmap[] leftHandImages;
     private Bitmap[] rightHandImages;
