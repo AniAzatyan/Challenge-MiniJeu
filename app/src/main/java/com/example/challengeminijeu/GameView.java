@@ -16,6 +16,7 @@ import android.view.SurfaceView;
 
 import androidx.core.content.ContextCompat;
 
+import java.util.Random;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
@@ -29,16 +30,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int cellWidth;
     private int canvasHeight;
 
-    private final int RED = ContextCompat.getColor(getContext(), R.color.red);
-    private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
-    private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
-    private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
+    private final int[] rouletteColors;
+    private float rouletteRotation = 0;
+    private boolean isSpinning = false;
+    private float spinSpeed = 0;
+
+    private final int RED;
+    private final int GREEN;
+    private final int BLUE;
+    private final int YELLOW;
 
     private AudioRecord audioRecord;
     private boolean isListening = false;
     private static final int SAMPLE_RATE = 8000;
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-
 
     public GameView(Context context) {
         super(context);
@@ -46,12 +51,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
 
+        RED = ContextCompat.getColor(getContext(), R.color.red);
+        GREEN = ContextCompat.getColor(getContext(), R.color.green);
+        BLUE = ContextCompat.getColor(getContext(), R.color.blue);
+        YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
+
         colors = new int[][]{
                 {RED, RED, RED, RED},
                 {GREEN, GREEN, GREEN, GREEN},
                 {BLUE, BLUE, BLUE, BLUE},
                 {YELLOW, YELLOW, YELLOW, YELLOW}
         };
+
+        rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
+
     }
 
     @Override
@@ -93,7 +106,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             centerWheelY = -radiusWheel;
 
             drawColumns(canvas);
+            canvas.save();
+            canvas.rotate(rouletteRotation, centerWheelX, centerWheelY + radiusWheel);
             drawRoulette(canvas);
+            canvas.restore();
             drawIndicatorTriangle(canvas);
             drawSideCircles(canvas);
         }
@@ -115,13 +131,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private void drawRoulette(Canvas canvas) {
-        int[] rouletteColors = {
-                ContextCompat.getColor(getContext(), R.color.red),
-                ContextCompat.getColor(getContext(), R.color.blue),
-                ContextCompat.getColor(getContext(), R.color.green),
-                ContextCompat.getColor(getContext(), R.color.yellow)
-        };
-
         float startAngle = 0;
         RectF rect = new RectF(centerWheelX - radiusWheel, centerWheelY, centerWheelX + radiusWheel, centerWheelY + 2 * radiusWheel);
 
@@ -129,17 +138,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (int color : rouletteColors) {
             fillPaint.setColor(color);
-            canvas.drawArc(rect, startAngle, 180f / rouletteColors.length, true, fillPaint);
-            startAngle += 180f / rouletteColors.length;
+            canvas.drawArc(rect, startAngle, 360f / rouletteColors.length, true, fillPaint);
+            startAngle += 360f / rouletteColors.length;
         }
 
         Paint borderPaint = createPaint(Paint.Style.STROKE, true, 8);
         borderPaint.setColor(ContextCompat.getColor(getContext(), R.color.black));
-        canvas.drawArc(rect, 0, 180, true, borderPaint);
-
-        Paint linePaint = createPaint(Paint.Style.STROKE, false, 5);
-        linePaint.setColor(ContextCompat.getColor(getContext(), R.color.dark_grey));
-        canvas.drawLine(centerWheelX - radiusWheel, centerWheelY + radiusWheel, centerWheelX + radiusWheel, centerWheelY + radiusWheel, linePaint);
+        canvas.drawArc(rect, 0, 360, true, borderPaint);
     }
 
     private void drawSideCircles(Canvas canvas) {
@@ -205,7 +210,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
             if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
                 Log.d("GameView", "Touched color: " + colors[col][row]);
-
             }
         }
         return true;
@@ -223,15 +227,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 BUFFER_SIZE);
-
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         isListening = true;
         audioRecord.startRecording();
-        int state = audioRecord.getRecordingState();
-        if (state != AudioRecord.RECORDSTATE_RECORDING) {
-            Log.e("MicroDebug", "AudioRecord not recording !");
-        } else {
-            Log.d("MicroDebug", "AudioRecord is recording.");
-        }
 
         new Thread(() -> {
             short[] buffer = new short[BUFFER_SIZE];
@@ -244,8 +246,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     double amplitude = Math.sqrt(sum / read);
 
-                    if (amplitude > 4000) {
+                    if (amplitude > 4000 && !isSpinning) {
                         Log.d("GameView", "Souffle détecté !");
+                        startRouletteSpin();
                     }
                 }
             }
@@ -261,8 +264,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    public void update() {
+    private void startRouletteSpin() {
+        isSpinning = true;
+        spinSpeed = 35 + new Random().nextInt(10);
+    }
 
+    public void update() {
+        if (isSpinning) {
+            rouletteRotation += spinSpeed;
+
+            if (spinSpeed > 5f) {
+                spinSpeed *= 0.97f;
+            } else {
+                spinSpeed *= 0.985f;
+            }
+
+            if (spinSpeed < 1f) {
+                isSpinning = false;
+                rouletteRotation = rouletteRotation % 360;
+
+                float arrowAngle = (270 - rouletteRotation + 360) % 360;
+                int sector = (int) (arrowAngle / (360f / rouletteColors.length));
+
+                int color = rouletteColors[sector];
+                String colorName = "Unknown";
+                if (color == RED) colorName = "RED";
+                else if (color == BLUE) colorName = "BLUE";
+                else if (color == GREEN) colorName = "GREEN";
+                else if (color == YELLOW) colorName = "YELLOW";
+
+                Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
+            }
+        }
     }
 
 }
