@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <!-- Image en haut -->
+    <ImageView
+        android:id="@+id/titleImage"
+        android:layout_width="match_parent"
+        android:layout_height="700dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:scaleType="centerCrop"
+        android:src="@drawable/titletwist" />
+
+    <Button
+        android:id="@+id/playButton"
+        android:layout_width="300dp"
+        android:layout_height="100dp"
+        android:text="JOUER"
+        android:textSize="35sp"
+        android:textColor="#FFFFFF"
+        android:fontFamily="@font/dynapuff"
+        android:shadowColor="#FF0000"
+        android:shadowDx="4"
+        android:shadowDy="4"
+        android:shadowRadius="6"
+        android:background="@drawable/button_red_glow"
+        android:layout_below="@id/titleImage"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="32dp" />
+
+    <Button
+        android:id="@+id/scoreButton"
+        android:layout_width="300dp"
+        android:layout_height="100dp"
+        android:text="SCORES"
+        android:textSize="35sp"
+        android:textColor="#FFFFFF"
+        android:fontFamily="@font/dynapuff"
+        android:shadowColor="#0000FF"
+        android:shadowDx="4"
+        android:shadowDy="4"
+        android:shadowRadius="6"
+        android:background="@drawable/button_blue_glow"
+        android:layout_below="@id/playButton"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="80dp" />
+</RelativeLayout>

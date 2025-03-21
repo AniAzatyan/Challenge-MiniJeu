@@ -225,6 +225,4 @@ public class MainActivity extends Activity {
     private void startGame() {
         setContentView(new GameView(this, selectedFingers, selectedHands));
     }
-
-
 }
