@@ -1,6 +1,8 @@
 package com.example.challengeminijeu;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,6 +11,7 @@ import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -19,7 +22,11 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import com.example.challengeminijeu.models.Button;
 
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
+
+import java.util.Random;
+import java.util.Random;
 
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
@@ -52,8 +59,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
     private int[] currentFingerButton = new int[15];
 
+    private Bitmap[] leftHandImages;
+    private Bitmap[] rightHandImages;
+    private Bitmap currentLeftHand;
+    private Bitmap currentRightHand;
+
+    private int currentPlayer = 0;
+    private int numPlayers = 5;
+
     public GameView(Context context) {
         super(context);
+        this.numPlayers = Math.max(1, Math.min(numPlayers, 5));
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
@@ -68,9 +84,57 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         BLUE = ContextCompat.getColor(getContext(), R.color.blue);
         YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
 
+        colors = new int[][]{
+                {RED, RED, RED, RED},
+                {GREEN, GREEN, GREEN, GREEN},
+                {BLUE, BLUE, BLUE, BLUE},
+                {YELLOW, YELLOW, YELLOW, YELLOW}
+        };
         rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
 
+        loadHandImages();
+        changeHandAndFinger();
     }
+
+    private void loadHandImages() {
+        int[] leftHandIds = {
+                R.drawable.right_hand_1,
+                R.drawable.right_hand_2,
+                R.drawable.right_hand_3,
+                R.drawable.right_hand_4,
+                R.drawable.right_hand_5
+        };
+
+        int[] rightHandIds = {
+                R.drawable.right_hand_index,
+                R.drawable.right_hand_majeur,
+                R.drawable.right_hand_pouce
+        };
+
+        leftHandImages = new Bitmap[leftHandIds.length];
+        rightHandImages = new Bitmap[rightHandIds.length];
+
+        for (int i = 0; i < leftHandIds.length; i++) {
+            leftHandImages[i] = getBitmapFromVector(leftHandIds[i]);
+            if (leftHandImages[i] == null) {
+                Log.e("GameView", "Erreur de chargement main gauche: " + leftHandIds[i]);
+            } else {
+                Log.d("GameView", "Main gauche OK: " + leftHandIds[i]);
+            }
+        }
+
+        for (int i = 0; i < rightHandIds.length; i++) {
+            rightHandImages[i] = getBitmapFromVector(rightHandIds[i]);
+            if (rightHandImages[i] == null) {
+                Log.e("GameView", "Erreur de chargement main droite: " + rightHandIds[i]);
+            } else {
+                Log.d("GameView", "Main droite OK: " + rightHandIds[i]);
+            }
+        }
+    }
+
+
+
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -170,8 +234,24 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float leftX = centerWheelX - radiusWheel - smallRadius - spacing;
         float rightX = centerWheelX + radiusWheel + smallRadius + spacing;
 
-        canvas.drawCircle(leftX, circleCenterY, smallRadius, circlePaint);
-        canvas.drawCircle(rightX, circleCenterY, smallRadius, circlePaint);
+        //canvas.drawCircle(leftX, circleCenterY, smallRadius, circlePaint);
+        //canvas.drawCircle(rightX, circleCenterY, smallRadius, circlePaint);
+
+        Log.d("GameView", "Tentative d'affichage des mains...");
+
+        if (currentLeftHand != null) {
+            Log.d("GameView", "Dessin de la main gauche !");
+            canvas.drawBitmap(currentLeftHand, leftX - (currentLeftHand.getWidth() / 2), circleCenterY - (currentLeftHand.getHeight() / 2), null);
+        } else {
+            Log.e("GameView", "Impossible de dessiner la main gauche !");
+        }
+
+        if (currentRightHand != null) {
+            Log.d("GameView", "Dessin de la main droite !");
+            canvas.drawBitmap(currentRightHand, rightX - (currentRightHand.getWidth() / 2), circleCenterY - (currentRightHand.getHeight() / 2), null);
+        } else {
+            Log.e("GameView", "Impossible de dessiner la main droite !");
+        }
     }
 
     private void drawIndicatorTriangle(Canvas canvas) {
@@ -192,6 +272,41 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         canvas.drawPath(createTrianglePath(points), trianglePaint);
     }
+
+    public void changeTurn() {
+        if (leftHandImages == null || leftHandImages.length == 0 || rightHandImages == null || rightHandImages.length == 0) {
+            Log.e("GameView", "Les images ne sont pas chargées !");
+            return;
+        }
+
+        currentPlayer = (currentPlayer + 1) % numPlayers;
+        currentLeftHand = leftHandImages[currentPlayer];
+
+        changeHandAndFinger();
+
+        Log.d("GameView", "Tour du joueur: " + currentPlayer);
+        if (currentLeftHand == null) {
+            Log.e("GameView", "ERREUR: currentLeftHand est NULL après assignation !");
+        }
+        if (currentRightHand == null) {
+            Log.e("GameView", "ERREUR: currentRightHand est NULL après assignation !");
+        }
+    }
+
+    public void changeHandAndFinger() {
+        if (leftHandImages != null && leftHandImages.length > 0) {
+            currentLeftHand = leftHandImages[currentPlayer];
+        }
+        if (rightHandImages != null && rightHandImages.length > 0) {
+            int rightIndex = new Random().nextInt(rightHandImages.length);
+            currentRightHand = rightHandImages[rightIndex];
+        } else {
+            Log.e("GameView", "Aucune image de main droite disponible !");
+        }
+
+        Log.d("GameView", "Nouvelle main droite choisie: " + (currentRightHand != null ? "OK" : "NULL"));
+    }
+
 
     private Paint createPaint(Paint.Style style, boolean antiAlias, float strokeWidth) {
         Paint paint = new Paint();
@@ -403,6 +518,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 .build();
 
         soundReleasedId = soundPool.load(context, R.raw.fiasco, 1);
+    }
+
+    private Bitmap getBitmapFromVector(int resId) {
+        Drawable drawable = AppCompatResources.getDrawable(getContext(), resId);
+        if (drawable == null) {
+            Log.e("GameView", "Drawable non trouvé pour le resId: " + resId);
+            return null;
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(
+                drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888
+        );
+
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 
 }
