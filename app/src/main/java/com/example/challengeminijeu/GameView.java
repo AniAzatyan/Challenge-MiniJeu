@@ -2,25 +2,47 @@ package com.example.challengeminijeu;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
-public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
+public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
-    private float centerX, centerY, radius;
+    private Paint paint;
+
+    private static final int NUM_COLUMNS = 4;
+    private static final int NUM_CIRCLES = 4;
+    private static final int CIRCLE_RADIUS = 40;
+    private float centerWheelX, centerWheelY, radiusWheel;
+    private int[][] colors;
+    private int cellWidth;
+    private int canvasHeight;
+
+    private final int RED = ContextCompat.getColor(getContext(), R.color.red);
+    private final int GREEN = ContextCompat.getColor(getContext(), R.color.green);
+    private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
+    private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
 
     public GameView(Context context) {
         super(context);
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
-        setFocusable(true);
+        paint = new Paint();
+
+        colors = new int[][]{
+                {RED, RED, RED, RED},
+                {GREEN, GREEN, GREEN, GREEN},
+                {BLUE, BLUE, BLUE, BLUE},
+                {YELLOW, YELLOW, YELLOW, YELLOW}
+        };
     }
 
     @Override
@@ -30,7 +52,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     @Override
-    public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {}
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        cellWidth = width / NUM_COLUMNS;
+        canvasHeight = height;
+    }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
@@ -46,22 +71,36 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
-    private int x = 0;
-
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-        if (canvas == null) return;
+        if (canvas != null) {
+            canvas.drawColor(Color.WHITE);
 
-        canvas.drawColor(ContextCompat.getColor(getContext(), R.color.white));
+            radiusWheel = getWidth() / 4.5f;
+            centerWheelX = getWidth() / 2f;
+            centerWheelY = -radiusWheel;
 
-        radius = getWidth() / 4.5f;
-        centerX = getWidth() / 2f;
-        centerY = -radius;
+            drawColumns(canvas);
+            drawRoulette(canvas);
+            drawIndicatorTriangle(canvas);
+            drawSideCircles(canvas);
+        }
+    }
 
-        drawRoulette(canvas);
-        drawIndicatorTriangle(canvas);
-        drawSideCircles(canvas);
+    private void drawColumns(Canvas canvas) {
+        int boardTop = canvasHeight / 3;
+        int boardHeight = canvasHeight * 2 / 3;
+
+        for (int col = 0; col < NUM_COLUMNS; col++) {
+            for (int row = 0; row < NUM_CIRCLES; row++) {
+                float x = (col * cellWidth) + (cellWidth / 2);
+                float y = boardTop + row * (boardHeight / NUM_CIRCLES) + (boardHeight / (NUM_CIRCLES * 2));
+
+                paint.setColor(colors[col][row]);
+                canvas.drawCircle(x, y, CIRCLE_RADIUS, paint);
+            }
+        }
     }
 
     private void drawRoulette(Canvas canvas) {
@@ -73,7 +112,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         };
 
         float startAngle = 0;
-        RectF rect = new RectF(centerX - radius, centerY, centerX + radius, centerY + 2 * radius);
+        RectF rect = new RectF(centerWheelX - radiusWheel, centerWheelY, centerWheelX + radiusWheel, centerWheelY + 2 * radiusWheel);
 
         Paint fillPaint = createPaint(Paint.Style.FILL, true, 0);
 
@@ -89,20 +128,20 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         Paint linePaint = createPaint(Paint.Style.STROKE, false, 5);
         linePaint.setColor(ContextCompat.getColor(getContext(), R.color.dark_grey));
-        canvas.drawLine(centerX - radius, centerY + radius, centerX + radius, centerY + radius, linePaint);
+        canvas.drawLine(centerWheelX - radiusWheel, centerWheelY + radiusWheel, centerWheelX + radiusWheel, centerWheelY + radiusWheel, linePaint);
     }
 
     private void drawSideCircles(Canvas canvas) {
         Paint circlePaint = createPaint(Paint.Style.FILL, true, 0);
         circlePaint.setColor(ContextCompat.getColor(getContext(), R.color.black));
 
-        float smallRadius = radius / 2.5f;
+        float smallRadius = radiusWheel / 2.5f;
         float spacing = 50;
-        float verticalOffset = 40;
-        float circleCenterY = centerY + 2 * radius - smallRadius - verticalOffset;
+        float verticalOffset = 0;
+        float circleCenterY = centerWheelY + 2 * radiusWheel - smallRadius - verticalOffset;
 
-        float leftX = centerX - radius - smallRadius - spacing;
-        float rightX = centerX + radius + smallRadius + spacing;
+        float leftX = centerWheelX - radiusWheel - smallRadius - spacing;
+        float rightX = centerWheelX + radiusWheel + smallRadius + spacing;
 
         canvas.drawCircle(leftX, circleCenterY, smallRadius, circlePaint);
         canvas.drawCircle(rightX, circleCenterY, smallRadius, circlePaint);
@@ -112,16 +151,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         Paint trianglePaint = createPaint(Paint.Style.FILL_AND_STROKE, true, 0);
         trianglePaint.setColor(ContextCompat.getColor(getContext(), R.color.black));
 
-        float triangleWidth = 80;
-        float triangleHeight = 60;
+        float triangleWidth = 60;
+        float triangleHeight = 45;
 
-        float tipY = centerY + 2 * radius;
+        float tipY = centerWheelY + 2 * radiusWheel;
         float baseY = tipY + triangleHeight;
 
         float[] points = {
-                centerX - triangleWidth / 2, baseY,
-                centerX + triangleWidth / 2, baseY,
-                centerX, tipY
+                centerWheelX - triangleWidth / 2, baseY,
+                centerWheelX + triangleWidth / 2, baseY,
+                centerWheelX, tipY
         };
 
         canvas.drawPath(createTrianglePath(points), trianglePaint);
@@ -144,7 +183,25 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return path;
     }
 
-    public void update() {
-        x = (x + 1) % 300;
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            float touchX = event.getX();
+            float touchY = event.getY();
+
+            int col = (int) (touchX / cellWidth);
+            int row = (int) (touchY / (canvasHeight / NUM_CIRCLES));
+
+            if (col >= 0 && col < NUM_COLUMNS && row >= 0 && row < NUM_CIRCLES) {
+                Log.d("GameView", "Touched color: " + colors[col][row]);
+
+            }
+        }
+        return true;
     }
+
+    public void update() {
+
+    }
+
 }
