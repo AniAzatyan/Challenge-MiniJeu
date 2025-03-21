@@ -13,6 +13,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.media.MediaPlayer;
+
 
 import androidx.core.content.ContextCompat;
 
@@ -44,6 +46,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean isListening = false;
     private static final int SAMPLE_RATE = 8000;
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+    private MediaPlayer mediaPlayer;
+
 
     public GameView(Context context) {
         super(context);
@@ -64,7 +68,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         };
 
         rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
-
+        mediaPlayer = MediaPlayer.create(context, R.raw.wheel);
+        mediaPlayer.setLooping(true);
     }
 
     @Override
@@ -246,12 +251,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     }
                     double amplitude = Math.sqrt(sum / read);
 
-                    if (amplitude > 3000) {
+                    if (amplitude > 4000) {
                         float addedSpeed = (float) (amplitude / 1500);
                         spinSpeed += addedSpeed;
 
                         if (!isSpinning) {
                             isSpinning = true;
+
+                            if (!mediaPlayer.isPlaying()) {
+                                mediaPlayer.start();
+                            }
                         }
                     }
                 }
@@ -266,6 +275,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             audioRecord.release();
             audioRecord = null;
         }
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     public void update() {
@@ -273,10 +286,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
-
+            float volume = Math.min(spinSpeed / 10f, 1f);
+            mediaPlayer.setVolume(volume, volume);
             if (spinSpeed < 1f) {
                 isSpinning = false;
                 spinSpeed = 0;
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mediaPlayer.seekTo(0);
+                }
+
 
                 rouletteRotation = rouletteRotation % 360;
 
