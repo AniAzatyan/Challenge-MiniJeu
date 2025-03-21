@@ -10,6 +10,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
@@ -67,6 +68,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private int currentPlayer = 0;
     private int numPlayers = 5;
+    private MediaPlayer mediaPlayer;
+
 
     public GameView(Context context) {
         super(context);
@@ -92,7 +95,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 {YELLOW, YELLOW, YELLOW, YELLOW}
         };
         rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
-
+        mediaPlayer = MediaPlayer.create(context, R.raw.wheel);
+        mediaPlayer.setLooping(true);
         loadHandImages();
         changeHandAndFinger();
     }
@@ -415,6 +419,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                         if (!isSpinning) {
                             isSpinning = true;
+
+                            if (!mediaPlayer.isPlaying()) {
+                                mediaPlayer.start();
+                            }
                         }
                     }
                 }
@@ -429,6 +437,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             audioRecord.release();
             audioRecord = null;
         }
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     public void update() {
@@ -436,10 +448,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             rouletteRotation += spinSpeed;
 
             spinSpeed *= 0.985f;
-
+            float volume = Math.min(spinSpeed / 10f, 1f);
+            mediaPlayer.setVolume(volume, volume);
             if (spinSpeed < 1f) {
                 isSpinning = false;
                 spinSpeed = 0;
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    mediaPlayer.seekTo(0);
+                }
 
                 rouletteRotation = rouletteRotation % 360;
 
