@@ -34,6 +34,7 @@ import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
 import java.util.Random;
+import java.util.UUID;
 
 public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private GameThread thread;
@@ -244,7 +245,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void changeTurn(String colorName) {
-        //showWinnerPopupAndEndGame(startedTime);
+        showWinnerPopupAndEndGame(startedTime);
 
         currentPlayer = (currentPlayer + 1) % hands;
         changeHandAndFinger(colorName);
@@ -518,6 +519,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                             RankingRepository repo = new RankingRepository();
                             Ranking ranking = Ranking.builder()
+                                    .id(UUID.randomUUID().toString())
                                     .userName(name)
                                     .score(100)
                                     .nbHand(hands)
