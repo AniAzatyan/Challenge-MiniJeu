@@ -67,7 +67,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private Bitmap[] rightHandImages;
     private Bitmap currentLeftHand;
     private Bitmap currentRightHand;
-
+    private int playersRemaining;
     private int currentPlayer = 0;
     private  int rightIndex = 0;
     private int hands;
@@ -84,6 +84,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     public GameView(Context context, int fingers, int hands) {
         super(context);
+
         this.context = context;
         this.startedTime = System.currentTimeMillis();
         this.hands = Math.max(1, Math.min(hands, 5));
@@ -91,7 +92,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         getHolder().addCallback(this);
         thread = new GameThread(getHolder(), this);
         paint = new Paint();
-
+        playersRemaining = hands;
         initializeButtons(context);
         initializeSoundPool(context);
         initializeVibrator(context);
@@ -312,7 +313,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
-                        showWinnerPopupAndEndGame(startedTime);
+                        if(playersRemaining == 1){
+                            showWinnerPopupAndEndGame(startedTime);
+
+                        }
+                        else
+                        {
+                            playersRemaining--;
+                        }
 
                     }
                     else
@@ -340,7 +348,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
-                        showWinnerPopupAndEndGame(startedTime);
+                        if(playersRemaining == 1){
+                            showWinnerPopupAndEndGame(startedTime);
+
+                        }
+                        else
+                        {
+                            playersRemaining--;
+                        }
 
 
                     }
@@ -370,7 +385,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
-                        showWinnerPopupAndEndGame(startedTime);
+                        if(playersRemaining == 1){
+                            showWinnerPopupAndEndGame(startedTime);
+
+                        }
+                        else
+                        {
+                            playersRemaining--;
+                        }
                     }
                     else
                     {
@@ -399,7 +421,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         if (vibrator != null) {
                             vibrator.vibrate(VibrationEffect.createOneShot(1500, VibrationEffect.DEFAULT_AMPLITUDE));
                         }
-                        showWinnerPopupAndEndGame(startedTime);
+                        if(playersRemaining == 1){
+                            showWinnerPopupAndEndGame(startedTime);
+
+                        }
+                        else
+                        {
+                            playersRemaining--;
+                        }
 
 
                     }
