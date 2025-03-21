@@ -6,6 +6,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -31,6 +34,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private final int BLUE = ContextCompat.getColor(getContext(), R.color.blue);
     private final int YELLOW = ContextCompat.getColor(getContext(), R.color.yellow);
 
+    private AudioRecord audioRecord;
+    private boolean isListening = false;
+    private static final int SAMPLE_RATE = 8000;
+    private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+
+
     public GameView(Context context) {
         super(context);
         getHolder().addCallback(this);
@@ -49,6 +58,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         thread.setRunning(true);
         thread.start();
+        startMicListening();
     }
 
     @Override
@@ -64,6 +74,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             try {
                 thread.setRunning(false);
                 thread.join();
+                stopMicListening();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -198,6 +209,56 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
         return true;
+    }
+
+    private void startMicListening() {
+        if (ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.RECORD_AUDIO)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.w("GameView", "Permission micro non accordée !");
+            return;
+        }
+
+        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                BUFFER_SIZE);
+
+        isListening = true;
+        audioRecord.startRecording();
+        int state = audioRecord.getRecordingState();
+        if (state != AudioRecord.RECORDSTATE_RECORDING) {
+            Log.e("MicroDebug", "AudioRecord not recording !");
+        } else {
+            Log.d("MicroDebug", "AudioRecord is recording.");
+        }
+
+        new Thread(() -> {
+            short[] buffer = new short[BUFFER_SIZE];
+            while (isListening) {
+                int read = audioRecord.read(buffer, 0, BUFFER_SIZE);
+                if (read > 0) {
+                    double sum = 0;
+                    for (int i = 0; i < read; i++) {
+                        sum += buffer[i] * buffer[i];
+                    }
+                    double amplitude = Math.sqrt(sum / read);
+
+                    if (amplitude > 4000) {
+                        Log.d("GameView", "Souffle détecté !");
+                    }
+                }
+            }
+        }).start();
+    }
+
+    private void stopMicListening() {
+        isListening = false;
+        if (audioRecord != null) {
+            audioRecord.stop();
+            audioRecord.release();
+            audioRecord = null;
+        }
     }
 
     public void update() {
