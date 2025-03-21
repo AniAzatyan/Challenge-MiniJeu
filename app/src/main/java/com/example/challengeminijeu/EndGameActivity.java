@@ -3,11 +3,15 @@ package com.example.challengeminijeu;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+
+import com.example.challengeminijeu.models.Ranking;
+import com.example.challengeminijeu.repositories.RankingRepository;
 
 public class EndGameActivity extends Activity {
 
@@ -27,6 +31,7 @@ public class EndGameActivity extends Activity {
         Intent intent = getIntent();
         String winnerName = intent.getStringExtra(EXTRA_WINNER_NAME);
         long durationMs = intent.getLongExtra(EXTRA_DURATION_MS, 0);
+
 
         long minutes = (durationMs / 1000) / 60;
         long seconds = (durationMs / 1000) % 60;

@@ -3,22 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="#1E1E2C"
     android:padding="24dp">
 
     <TextView
         android:id="@+id/text_winner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Gagnant de la partie"
-        android:textSize="26sp"
+        android:text="GAGNANT DE LA PARTIE"
+        android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="#212121"
+        android:textColor="#FFFFFF"
+        android:letterSpacing="0.05"
         android:gravity="center"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp" />
+        android:layout_marginTop="48dp" />
 
     <TextView
         android:id="@+id/text_duration"
@@ -26,43 +27,45 @@
         android:layout_height="wrap_content"
         android:text="Durée : 00:00"
         android:textSize="16sp"
-        android:textColor="#555555"
+        android:textColor="#AAAAAA"
         android:gravity="center"
         app:layout_constraintTop_toBottomOf="@id/text_winner"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp" />
+        android:layout_marginTop="8dp" />
 
     <View
         android:id="@+id/divider"
         android:layout_width="0dp"
         android:layout_height="1dp"
-        android:background="#DDDDDD"
+        android:background="#444444"
         app:layout_constraintTop_toBottomOf="@id/text_duration"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="32dp" />
 
     <TextView
         android:id="@+id/text_ranking"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Classement des joueurs"
+        android:text="CLASSEMENT"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:textColor="#333333"
+        android:textColor="#DDDDDD"
+        android:letterSpacing="0.04"
         app:layout_constraintTop_toBottomOf="@id/divider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp" />
+        android:layout_marginTop="16dp" />
 
     <ScrollView
         android:id="@+id/scroll_ranking"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#FAFAFA"
+        android:background="#2A2A3C"
         android:layout_marginTop="8dp"
-        android:padding="12dp"
+        android:padding="16dp"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/text_ranking"
         app:layout_constraintBottom_toTopOf="@id/button_return"
         app:layout_constraintStart_toStartOf="parent"
@@ -72,9 +75,10 @@
             android:id="@+id/ranking_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="1. Joueur A - Vainqueur\n2. Joueur B - Round 4\n3. Joueur C - Round 3"
+            android:text="Chargement du classement..."
             android:textSize="15sp"
-            android:textColor="#444444" />
+            android:textColor="#CCCCCC"
+            android:lineSpacingExtra="4dp" />
     </ScrollView>
 
     <Button
@@ -84,11 +88,14 @@
         android:text="Retour à l'accueil"
         android:textAllCaps="false"
         android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:backgroundTint="#3F51B5"
-        android:layout_marginTop="16dp"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#5A75F2"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:elevation="4dp"
+        android:padding="14dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
