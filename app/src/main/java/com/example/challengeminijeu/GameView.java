@@ -8,6 +8,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -24,7 +26,10 @@ import android.os.Vibrator;
 import android.widget.EditText;
 
 import com.example.challengeminijeu.models.Button;
+import com.example.challengeminijeu.models.Ranking;
+import com.example.challengeminijeu.repositories.RankingRepository;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.content.ContextCompat;
 
@@ -96,22 +101,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         rouletteColors = new int[]{RED, BLUE, GREEN, YELLOW, RED, BLUE, GREEN, YELLOW};
 
         loadHandImages();
-        changeHandAndFinger();
     }
 
     private void loadHandImages() {
-        leftHandImages = new Bitmap[hands];
+        leftHandImages = new Bitmap[hands*4];
         rightHandImages = new Bitmap[fingers];
-
-        for (int i = 0; i < hands; i++) {
-            String name = "right_hand_" + (i + 1);
-            int resId = getResources().getIdentifier(name, "drawable", getContext().getPackageName());
-            leftHandImages[i] = getBitmapFromVector(resId);
-        }
 
         for (int i = 0; i < fingers; i++) {
             String name = "right_hand_finger" + (i + 1);
-            int resId = getResources().getIdentifier(name, "drawable", getContext().getPackageName());
+            int resId = getResources().getIdentifier(name, "drawable", context.getPackageName());
             rightHandImages[i] = getBitmapFromVector(resId);
         }
     }
@@ -245,26 +243,27 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         canvas.drawPath(createTrianglePath(points), trianglePaint);
     }
 
-    public void changeTurn() {
-        showWinnerPopupAndEndGame(startedTime);
-
-        if (leftHandImages == null || leftHandImages.length == 0 || rightHandImages == null || rightHandImages.length == 0) {
-            return;
-        }
+    public void changeTurn(String colorName) {
+        //showWinnerPopupAndEndGame(startedTime);
 
         currentPlayer = (currentPlayer + 1) % hands;
-        currentLeftHand = leftHandImages[currentPlayer];
-
-        changeHandAndFinger();
+        changeHandAndFinger(colorName);
     }
 
-    public void changeHandAndFinger() {
-        if (leftHandImages != null && leftHandImages.length > 0) {
-            currentLeftHand = leftHandImages[currentPlayer];
-        }
+    public void changeHandAndFinger(String colorName) {
         if (rightHandImages != null && rightHandImages.length > 0) {
             int rightIndex = new Random().nextInt(fingers);
             currentRightHand = rightHandImages[rightIndex];
+        }
+
+        String coloredDrawableName = "right_hand_" + (currentPlayer + 1) + "_" + colorName.toLowerCase();
+        int resId = getResources().getIdentifier(coloredDrawableName, "drawable", context.getPackageName());
+        Bitmap coloredHand = getBitmapFromVector(resId);
+
+        if (coloredHand != null) {
+            currentLeftHand = coloredHand;
+        } else {
+            currentLeftHand = null;
         }
     }
 
@@ -443,7 +442,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 else if (color == GREEN) colorName = "GREEN";
                 else if (color == YELLOW) colorName = "YELLOW";
 
-                changeTurn();
+                changeTurn(colorName);
 
                 Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
             }
@@ -516,13 +515,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                         String name = input.getText().toString().trim();
                         if (!name.isEmpty()) {
                             long duration = System.currentTimeMillis() - startTimeMs;
-                            Intent intent = new Intent(context, EndGameActivity.class);
-                            intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
-                            intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
 
-                            android.app.Activity activity = (android.app.Activity) context;
-                            activity.startActivity(intent);
-                            activity.finish();
+                            RankingRepository repo = new RankingRepository();
+                            Ranking ranking = Ranking.builder()
+                                    .userName(name)
+                                    .score(100)
+                                    .nbHand(hands)
+                                    .nbFingers(fingers)
+                                    .build();
+
+                            repo.addRanking(ranking, success -> {
+                                if (success) {
+                                    Intent intent = new Intent(context, EndGameActivity.class);
+                                    intent.putExtra(EndGameActivity.EXTRA_WINNER_NAME, name);
+                                    intent.putExtra(EndGameActivity.EXTRA_DURATION_MS, duration);
+
+                                    android.app.Activity activity = (android.app.Activity) context;
+                                    activity.startActivity(intent);
+                                    activity.finish();
+                                }
+                            });
                         } else {
                             input.setError("Nom requis");
                         }
