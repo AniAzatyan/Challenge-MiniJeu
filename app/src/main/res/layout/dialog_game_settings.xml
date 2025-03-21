@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nombre de mains"
+        android:textSize="24sp"
+        android:textColor="@color/red"
+        android:fontFamily="@font/dynapuff"
+        android:shadowColor="@color/red"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <NumberPicker
+        android:id="@+id/handsPicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Doigts par main"
+        android:textSize="24sp"
+        android:textColor="@color/blue"
+        android:fontFamily="@font/dynapuff"
+        android:shadowColor="@color/blue"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp" />
+
+    <NumberPicker
+        android:id="@+id/fingersPicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+    <!-- Boutons personnalisés -->
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="32dp">
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="140dp"
+            android:layout_height="60dp"
+            android:text="Annuler"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/dynapuff"
+            android:background="@drawable/button_blue_glow"
+            android:shadowColor="#000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4"
+            android:layout_marginEnd="16dp"/>
+
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="140dp"
+            android:layout_height="60dp"
+            android:text="Commencer"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:fontFamily="@font/dynapuff"
+            android:background="@drawable/button_red_glow"
+            android:shadowColor="#000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4"/>
+    </LinearLayout>
+</LinearLayout>
