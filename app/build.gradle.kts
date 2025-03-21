@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.lombok)
+    alias(libs.plugins.google.gms)
 }
 
 android {
@@ -40,4 +42,12 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+
+    implementation(libs.firebase.firestore)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+
 }
