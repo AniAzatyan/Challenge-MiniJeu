@@ -116,25 +116,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         for (int i = 0; i < leftHandIds.length; i++) {
             leftHandImages[i] = getBitmapFromVector(leftHandIds[i]);
-            if (leftHandImages[i] == null) {
-                Log.e("GameView", "Erreur de chargement main gauche: " + leftHandIds[i]);
-            } else {
-                Log.d("GameView", "Main gauche OK: " + leftHandIds[i]);
-            }
         }
 
         for (int i = 0; i < rightHandIds.length; i++) {
             rightHandImages[i] = getBitmapFromVector(rightHandIds[i]);
-            if (rightHandImages[i] == null) {
-                Log.e("GameView", "Erreur de chargement main droite: " + rightHandIds[i]);
-            } else {
-                Log.d("GameView", "Main droite OK: " + rightHandIds[i]);
-            }
         }
     }
-
-
-
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -237,20 +224,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         //canvas.drawCircle(leftX, circleCenterY, smallRadius, circlePaint);
         //canvas.drawCircle(rightX, circleCenterY, smallRadius, circlePaint);
 
-        Log.d("GameView", "Tentative d'affichage des mains...");
-
         if (currentLeftHand != null) {
-            Log.d("GameView", "Dessin de la main gauche !");
             canvas.drawBitmap(currentLeftHand, leftX - (currentLeftHand.getWidth() / 2), circleCenterY - (currentLeftHand.getHeight() / 2), null);
-        } else {
-            Log.e("GameView", "Impossible de dessiner la main gauche !");
         }
 
         if (currentRightHand != null) {
-            Log.d("GameView", "Dessin de la main droite !");
             canvas.drawBitmap(currentRightHand, rightX - (currentRightHand.getWidth() / 2), circleCenterY - (currentRightHand.getHeight() / 2), null);
-        } else {
-            Log.e("GameView", "Impossible de dessiner la main droite !");
         }
     }
 
@@ -285,12 +264,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         changeHandAndFinger();
 
         Log.d("GameView", "Tour du joueur: " + currentPlayer);
-        if (currentLeftHand == null) {
-            Log.e("GameView", "ERREUR: currentLeftHand est NULL après assignation !");
-        }
-        if (currentRightHand == null) {
-            Log.e("GameView", "ERREUR: currentRightHand est NULL après assignation !");
-        }
     }
 
     public void changeHandAndFinger() {
@@ -300,11 +273,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (rightHandImages != null && rightHandImages.length > 0) {
             int rightIndex = new Random().nextInt(rightHandImages.length);
             currentRightHand = rightHandImages[rightIndex];
-        } else {
-            Log.e("GameView", "Aucune image de main droite disponible !");
         }
-
-        Log.d("GameView", "Nouvelle main droite choisie: " + (currentRightHand != null ? "OK" : "NULL"));
     }
 
 
@@ -482,6 +451,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 else if (color == BLUE) colorName = "BLUE";
                 else if (color == GREEN) colorName = "GREEN";
                 else if (color == YELLOW) colorName = "YELLOW";
+
+                changeTurn();
 
                 Log.d("GameView", "La roulette s'est arrêtée sur : " + colorName);
             }
